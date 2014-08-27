@@ -66,9 +66,10 @@ if __name__=='__main__':
     first_row = next(reader)
     logstart_unixtime = int(first_row[0])
     playbackstart_unixtime = int(time.time())
+    logging.info('start at {}'.format(logstart_unixtime))
     for row in reader:
         current_unixtime = int(time.time())
         log_unixtime = int(row[0])
 
-        logging.info('send after {}[sec.]'.format(
-            (log_unixtime - logstart_unixtime) - (current_unixtime - playbackstart_unixtime)))
+        logging.info('send at {}'.format(
+            (log_unixtime - logstart_unixtime) + playbackstart_unixtime))
