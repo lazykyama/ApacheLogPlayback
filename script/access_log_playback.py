@@ -35,16 +35,18 @@ import queue
 import requests
 
 class ResultWriter(threading.Thread): 
-    def __init__(self, result_queue): 
+    def __init__(self, result_queue, output_stream): 
         super(ResultWriter, self).__init__()
         self.__result_queue = result_queue
+        self.__output_stream = output_stream
 
     def run(self): 
         running = True
         while running: 
             result = self.__result_queue.get()
             if result is not None:
-                logging.debug('result: {}'.format(result.result()))
+                self.__output_stream.write(
+                    '{}\n'.format(result.result()))
             else: 
                 logging.info('result writer goes to finish...')
                 running = False
@@ -58,12 +60,12 @@ class ResultWriter(threading.Thread):
             self.__result_queue.join()
         self.__result_queue.put_nowait(None)
 
-def __format_response(response):
+def __format_response(res):
     if 'Content-Length' in res.headers: 
         content_length = res.headers['Content-Length']
     else: 
         content_length = len(res.text)
-    return '{}\t{}\t{}\t{}'.format(
+    return '{}\t{}\t{}\t{}\t{}'.format(
         res.url, res.status_code, res.reason, 
         res.elapsed.total_seconds(), content_length)
 
@@ -81,11 +83,12 @@ def send_request(url, sending_time):
 class TaskDispatchThread(threading.Thread):
     DEFAULT_REQUEST_WORKER_NUM = 30
 
-    def __init__(self, task_queue=None, 
+    def __init__(self, task_queue=None, output_stream=None, 
         request_worker_num=DEFAULT_REQUEST_WORKER_NUM):
         super(TaskDispatchThread, self).__init__()
         self.__task_queue = task_queue
-        self.__result_writer = ResultWriter(queue.Queue())
+        self.__result_writer = ResultWriter(
+            result_queue=queue.Queue(), output_stream=output_stream)
         self.__executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=request_worker_num)
 
@@ -216,7 +219,7 @@ if __name__=='__main__':
 
     # preapre worker thread.
     task_queue = queue.PriorityQueue(maxsize=args['--queue_size'])
-    task_dispatcher = TaskDispatchThread(task_queue, 
+    task_dispatcher = TaskDispatchThread(task_queue, args['--output'], 
         request_worker_num=args['--worker_num'])
     task_dispatcher.start()
 
