@@ -60,13 +60,13 @@ class ResultWriter(threading.Thread):
             self.__result_queue.join()
         self.__result_queue.put_nowait(None)
 
-def __format_response(res):
+def __format_response(sending_time, res):
     if 'Content-Length' in res.headers: 
         content_length = res.headers['Content-Length']
     else: 
         content_length = len(res.text)
-    return '{}\t{}\t{}\t{}\t{}'.format(
-        res.url, res.status_code, res.reason, 
+    return '{}\t{}\t{}\t{}\t{}\t{}'.format(
+        sending_time, res.url, res.status_code, res.reason, 
         res.elapsed.total_seconds(), content_length)
 
 def send_request(url, sending_time):
@@ -78,7 +78,7 @@ def send_request(url, sending_time):
     logging.debug('exec: {}'.format(url))
 
     res = requests.get(url)
-    return __format_response(res)
+    return __format_response(sending_time, res)
 
 class TaskDispatchThread(threading.Thread):
     DEFAULT_REQUEST_WORKER_NUM = 30
