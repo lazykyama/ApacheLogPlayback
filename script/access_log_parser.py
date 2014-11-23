@@ -9,9 +9,9 @@ Usage:
     access_log_parser.py --version
 
 Options: 
-    -i --input INPUT          Specify input file. If omitted, default is stdin.
-    -o --output OUTPUT        Specify output file. If omitted, default is stdout.
-    -d --delimiter DELIMITER  Specify delimiter for input data [default:  ].
+    -i --input INPUT          input file. If omitted, default is stdin.
+    -o --output OUTPUT        output file. If omitted, default is stdout.
+    -d --delimiter DELIMITER  delimiter for input data [default:  ].
     --convert_millisec        Specify the whether this script converts response time format 
                               from microsec to millisec [default: False].
     --convert_unixtime        Specify the whether 
@@ -20,7 +20,7 @@ Options:
                               this script outputs HTTP status code [default: False].
     -h --help                 Show this help message.
     --version                 Show this script version.
-    -v --verbose              Specify logging level [default: False].
+    -v --verbose              logging level [default: False].
 """
 
 import dateutil.parser
