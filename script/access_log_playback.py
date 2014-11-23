@@ -76,8 +76,10 @@ def send_request(url, sending_time):
         res.elapsed.total_seconds(), content_length)
 
 class TaskDispatchThread(threading.Thread):
-    def __init__(self, 
-        task_queue=None, request_worker_num):
+    DEFAULT_REQUEST_WORKER_NUM = 30
+
+    def __init__(self, task_queue=None, 
+        request_worker_num=DEFAULT_REQUEST_WORKER_NUM):
         super(TaskDispatchThread, self).__init__()
         self.__task_queue = task_queue
         self.__result_writer = ResultWriter(queue.Queue())
