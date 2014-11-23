@@ -58,6 +58,15 @@ class ResultWriter(threading.Thread):
             self.__result_queue.join()
         self.__result_queue.put_nowait(None)
 
+def __format_response(response):
+    if 'Content-Length' in res.headers: 
+        content_length = res.headers['Content-Length']
+    else: 
+        content_length = len(res.text)
+    return '{}\t{}\t{}\t{}'.format(
+        res.url, res.status_code, res.reason, 
+        res.elapsed.total_seconds(), content_length)
+
 def send_request(url, sending_time):
     current_unixtime = int(time.time())
     waittime = (sending_time - current_unixtime)
@@ -67,13 +76,7 @@ def send_request(url, sending_time):
     logging.debug('exec: {}'.format(url))
 
     res = requests.get(url)
-    if 'Content-Length' in res.headers: 
-        content_length = res.headers['Content-Length']
-    else: 
-        content_length = len(res.text)
-    return '{}\t{}\t{}\t{}'.format(
-        url, res.status_code, res.reason, 
-        res.elapsed.total_seconds(), content_length)
+    return __format_response(res)
 
 class TaskDispatchThread(threading.Thread):
     DEFAULT_REQUEST_WORKER_NUM = 30
