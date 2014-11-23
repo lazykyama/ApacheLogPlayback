@@ -5,21 +5,24 @@
 
 Usage: 
     access_log_playback.py [-i INPUT] [-o OUTPUT] [-d DELIMITER] [--playback_speed SPEED]
+        [--queue_size QUEUE_SIZE] [--worker_num WORKER_NUM]
         [--scheme SCHEME] [--host HOST] [--port PORT] [-v]
     access_log_playback.py -h|--help
     access_log_playback.py --version
 
 Options: 
-    -i --input INPUT          Specify input file. If omitted, default is stdin.
-    -o --output OUTPUT        Specify output file. If omitted, default is stdout.
-    -d --delimiter DELIMITER  Specify delimiter for input data [default: \t].
-    --playback_speed SPEED    Specify speed of playbacking [default: 1.0].
-    --scheme SCHEME           Specify url scheme to access [default: http].
-    --host HOST               Specify hostname to access [default: localhost].
-    --port PORT               Specify port number to access [default: 80].
+    -i --input INPUT          input file. If omitted, default is stdin.
+    -o --output OUTPUT        output file. If omitted, default is stdout.
+    -d --delimiter DELIMITER  delimiter for input data [default: \t].
+    --playback_speed SPEED    speed of playbacking [default: 1.0].
+    --queue_size QUEUE_SIZE   the size of queue for request tasks [default: 100].
+    --worker_num WORKER_NUM   the number of workers that send request threads [default: 30].
+    --scheme SCHEME           url scheme to access [default: http].
+    --host HOST               hostname to access [default: localhost].
+    --port PORT               port number to access [default: 80].
     -h --help                 Show this help message.
     --version                 Show this script version.
-    -v --verbose              Specify logging level [default: False].
+    -v --verbose              logging level [default: False].
 """
 
 import time
@@ -30,9 +33,6 @@ import queue
 
 # 3rd-party's library.
 import requests
-
-REQUEST_WORKER_DEFAULT_SIZE = 30
-TASKQUEUE_LIMIT = 100
 
 class ResultWriter(threading.Thread): 
     def __init__(self, result_queue): 
@@ -77,12 +77,12 @@ def send_request(url, sending_time):
 
 class TaskDispatchThread(threading.Thread):
     def __init__(self, 
-        task_queue=None, request_worker_size=REQUEST_WORKER_DEFAULT_SIZE):
+        task_queue=None, request_worker_num):
         super(TaskDispatchThread, self).__init__()
         self.__task_queue = task_queue
         self.__result_writer = ResultWriter(queue.Queue())
         self.__executor = concurrent.futures.ThreadPoolExecutor(
-            max_workers=request_worker_size)
+            max_workers=request_worker_num)
 
     def run(self):
         running = True
@@ -175,7 +175,11 @@ if __name__=='__main__':
             '--delimiter': schema.And(schema.Use(str), lambda d: len(d) == 1, 
                 error='deny multiple characters as delimiter: {}.'.format(args['--delimiter'])), 
             '--playback_speed': schema.And(schema.Use(float), lambda s: 0.0 < s, 
-                error='deny negative speed value: {}.'.format(args['--playback_speed'])), 
+                error='deny nonpositive speed value: {}.'.format(args['--playback_speed'])), 
+            '--queue_size': schema.And(schema.Use(int), lambda qs: 0 < qs,
+                error='deny nonpositive queue size: {}.'.format(args['--queue_size'])),
+            '--worker_num': schema.And(schema.Use(int), lambda wn: 0 < wn, 
+                error='deny nonpositive worker number: {}.'.format(args['--worker_num'])),
             '--scheme': str, 
             '--host': str, 
             '--port': schema.And(schema.Use(int), lambda p: 0 <= p <= 65535, 
@@ -206,8 +210,9 @@ if __name__=='__main__':
     logging.debug('{}'.format(args))
 
     # preapre worker thread.
-    task_queue = queue.PriorityQueue(maxsize=TASKQUEUE_LIMIT)
-    task_dispatcher = TaskDispatchThread(task_queue)
+    task_queue = queue.PriorityQueue(maxsize=args['--queue_size'])
+    task_dispatcher = TaskDispatchThread(task_queue, 
+        request_worker_num=args['--worker_num'])
     task_dispatcher.start()
 
     # main procedures.
