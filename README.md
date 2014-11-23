@@ -1,7 +1,7 @@
 ApacheLogPlayback
 =================
 
-Abstract
+Overview
 ---------
 
 Send HTTP requests at actual intervals of apache accesslog.
@@ -22,3 +22,15 @@ The scripts are checked under Python 3.3.0, and uses the below libraries.
 * python-dateutil>=2.2
 * requests>=2.4.1
 * schema>=0.3.1
+
+Limitations
+---------------
+
+* `access_log_playback.py` needs sorted accesslog by received time in ascending order.
+* Supports GET method only.
+    - The other methods may be supported if many demands of implementation are.
+
+License
+---------------
+
+Please see LICENSE.
